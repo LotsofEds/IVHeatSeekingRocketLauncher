@@ -251,7 +251,7 @@ namespace LockOn.net
 
                     World.AddExplosion(rocket.Position, ExplosionType.Rocket, 100f, true, true, 1.0f);
 
-                    PTFXExp = GTA.Native.Function.Call<Int32>("START_PTFX", "exp_buzzard", rocket.Position.X, rocket.Position.Y, rocket.Position.Z, 0, 0, 0, 1.0);
+                    PTFXExp = GTA.Native.Function.Call<Int32>("START_PTFX", "exp_rocket", rocket.Position.X, rocket.Position.Y, rocket.Position.Z, 0, 0, 0, 1.0);
 
                     resetRocket();
                     bLaunched = false;
@@ -330,7 +330,7 @@ namespace LockOn.net
 
                     World.AddExplosion(rocket.Position, ExplosionType.Rocket, 100f, true, true, 1.0f);
 
-                    PTFXExp = GTA.Native.Function.Call<Int32>("START_PTFX", "exp_buzzard", rocket.Position.X, rocket.Position.Y, rocket.Position.Z, 0, 0, 0, 1.0);
+                    PTFXExp = GTA.Native.Function.Call<Int32>("START_PTFX", "exp_rocket", rocket.Position.X, rocket.Position.Y, rocket.Position.Z, 0, 0, 0, 1.0);
 
                     resetRocket();
                     bLaunched = false;
