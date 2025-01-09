@@ -17,6 +17,7 @@ namespace LockOn.net
         private bool isLocking;
         private bool bLaunched;
         private bool inLineOfSight;
+        private bool HasLocked;
         private double timeWait;
         private Vector3 fixRotation;
         private Vector3 fixDirection;
@@ -28,6 +29,7 @@ namespace LockOn.net
         private Vehicle targetVeh = null;
         private Vehicle tmpTargetVeh = null;
         private double targetVehOffsetH;
+        private Vector3 handPos;
         private Vector3 midPos;
         private Vector2 targetPosScrn;
         private double timeLocked = 0;
@@ -40,7 +42,6 @@ namespace LockOn.net
         private string rocketTrail;
         private double timeLockingBeep = 0;
         private double timeCheckRocket = 50;
-        private double timeCheckSoundBug = 500;
         private double timepedCheck = 200;
         private double fuseTime = 2000;
         private int wantedLevel = 1;
@@ -102,7 +103,7 @@ namespace LockOn.net
             zOffSetPTFX = rocket.Model.GetDimensions().Z * -1;
 
             rocket.Visible = false;
-            rocket.AttachToPed(Player.Character, Bone.RightHand, new Vector3(0.62f, 0.04f, 0), new Vector3(0, 0, -1.55f));
+            rocket.AttachToPed(Player.Character, Bone.Spine, new Vector3(0.0f, 0.0f, 0.03f), new Vector3(1.5f, 0f, 0f));
 
             sndJLaunch.SoundLocation = ".\\scripts\\RocketLockFiles\\jlaunch.wav";
             sndJLaunch.Load();
@@ -153,6 +154,7 @@ namespace LockOn.net
                 GTA.Native.Function.Call("SET_OBJECT_RECORDS_COLLISIONS", rocket, false);
 
                 rocket.Detach();
+                rocket.Position = Player.Character.GetOffsetPosition(new Vector3(0.0f, 0.5f, 0.5f));
                 rocket.Visible = true;
                 fixRotation = Game.CurrentCamera.Rotation;
                 fixDirection = Game.CurrentCamera.Direction;
@@ -160,7 +162,6 @@ namespace LockOn.net
                 initialPosition = Player.Character.Position;
                 bLaunched = true;
                 fuseTime = 2000;
-                timeCheckSoundBug = 500;
 
                 GTA.Native.Function.Call("STOP_SOUND", LaunchSID);
                 GTA.Native.Function.Call("PLAY_SOUND_FROM_OBJECT", LaunchSID, "ROCKET_GRENADE_LAUNCH", rocket);
@@ -199,13 +200,6 @@ namespace LockOn.net
                     calcMidPos();
             }
 
-            if (timeCheckSoundBug <= 0)
-            {
-                timeCheckSoundBug = 500;
-            }
-            else
-                timeCheckSoundBug -= this.Interval;
-
             if ((Player.Character.Weapons.Current == Weapon.Episodic_23) && Player.Character.isShooting)
             {
                 foreach (GTA.Object o in World.GetAllObjects("w_e3_rocket92"))
@@ -219,9 +213,9 @@ namespace LockOn.net
                 fuseTime = 2000;
 
             else if (bLaunched)
-                fuseTime -= this.Interval;
+                fuseTime -= this.Interval * (100 / Game.FPS);
 
-            if (bLaunched && timeLocked >= 1000)
+            if ((bLaunched && timeLocked >= 1000) || HasLocked)
             {
                 if ((GTA.Native.Function.Call<bool>("HAS_OBJECT_COLLIDED_WITH_ANYTHING", rocket) || fuseTime <= 0 || rocket.Position.DistanceTo(targetVeh.Position) < 0.5f || (rocket.Position.DistanceTo(Player.Character.Position) > 200)))
                 {
@@ -258,6 +252,7 @@ namespace LockOn.net
                 }
                 else
                 {
+                    HasLocked = true;
                     Vector3 tmpDir = Vector3.Zero;
                     Vector3 tmpPos = Vector3.Zero;
 
@@ -273,7 +268,7 @@ namespace LockOn.net
                     if (timeWait <= 0 && rocket.Position.DistanceTo(Player.Character.Position) > 1.0f)
                         GTA.Native.Function.Call("SET_OBJECT_RECORDS_COLLISIONS", rocket, true);
                     else
-                        timeWait -= this.Interval;
+                        timeWait -= this.Interval * (100/Game.FPS);
 
                     Int16 tmpDiv;
 
@@ -342,7 +337,7 @@ namespace LockOn.net
                     if (timeWait <= 0 && rocket.Position.DistanceTo(Player.Character.Position) > 1.0f)
                         GTA.Native.Function.Call("SET_OBJECT_RECORDS_COLLISIONS", rocket, true);
                     else
-                        timeWait -= this.Interval;
+                        timeWait -= this.Interval * (100/Game.FPS);
 
                     rocket.Rotation = fixRotation;
                 }
@@ -359,7 +354,7 @@ namespace LockOn.net
                         resetRocket();
                 }
                 else
-                    timeCheckRocket -= this.Interval;
+                    timeCheckRocket -= this.Interval * (100 / Game.FPS);
             }
 
             if (!Game.isGameKeyPressed(GameKey.Aim) && !bLaunched && !GTA.Native.Function.Call<bool>("IS_CHAR_PLAYING_ANIM", Game.LocalPlayer.Character, "gun@rocket", "fire") && !GTA.Native.Function.Call<bool>("IS_CHAR_PLAYING_ANIM", Game.LocalPlayer.Character, "gun@rocket", "fire_crouch") || (GTA.Native.Function.Call<bool>("IS_CHAR_PLAYING_ANIM", Game.LocalPlayer.Character, "gun@rocket", "reload") || GTA.Native.Function.Call<bool>("IS_CHAR_PLAYING_ANIM", Game.LocalPlayer.Character, "gun@rocket", "reload_crouch")))
@@ -428,10 +423,10 @@ namespace LockOn.net
                                         vped.Delete();
                                     }
                                     else
-                                        timepedCheck -= this.Interval;
+                                        timepedCheck -= this.Interval * (100 / Game.FPS);
                                 }
                             }
-                            if (timeLocked > 1000 && (inLineOfSight || !CheckLineOfSight))
+                            if (timeLocked >= 1000 && (inLineOfSight || !CheckLineOfSight))
                             {
                                 targetVeh = tmpTargetVeh;
 
@@ -448,17 +443,17 @@ namespace LockOn.net
                             }
                             else if ((inLineOfSight || !CheckLineOfSight))
                             {
-                                timeLocked += this.Interval;
+                                timeLocked += this.Interval * (100 / Game.FPS);
 
                                 if ((soundLocking != ""))
                                 {
                                     if (timeLockingBeep <= 0)
                                     {
-                                        timeLockingBeep = 150;
+                                        timeLockingBeep = 200;
                                         sndLocking.Play();
                                     }
                                     else
-                                        timeLockingBeep -= this.Interval;
+                                        timeLockingBeep -= this.Interval * (100 / Game.FPS);
                                 }
                             }
                             else
@@ -610,9 +605,10 @@ namespace LockOn.net
             rocket.Collision = false;
             rocket.Visible = false;
             inLineOfSight = false;
+            HasLocked = false;
 
             GTA.Native.Function.Call("SET_OBJECT_RECORDS_COLLISIONS", rocket, false);
-            rocket.AttachToPed(Player.Character, Bone.RightHand, new Vector3(0.62f, 0.04f, 0), new Vector3(0, 0, -1.55f));
+            rocket.AttachToPed(Player.Character, Bone.Spine, new Vector3(0.0f, 0.0f, 0.03f), new Vector3(1.5f, 0f, 0f));
 
             vehList = null;
             targetVeh = null;
